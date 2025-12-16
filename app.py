@@ -1,3 +1,17 @@
+import nltk
+import os
+
+# Setup NLTK - Download data yang diperlukan
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords', quiet=True)
+
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt', quiet=True)
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
