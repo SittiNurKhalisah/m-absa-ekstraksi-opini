@@ -1,17 +1,47 @@
 import nltk
 import os
+import shutil
 
-# Setup NLTK - Download data yang diperlukan
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords', quiet=True)
+# Set NLTK data path
+nltk_data_dir = os.path.join(os.path.expanduser('~'), 'nltk_data')
 
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', quiet=True)
+def download_nltk_data():
+    """Download required NLTK data with cleanup on failure"""
+    required_packages = ['stopwords', 'punkt', 'punkt_tab', 'averaged_perceptron_tagger']
+    
+    for package in required_packages:
+        try:
+            # Check if already exists
+            if package == 'stopwords':
+                nltk.data.find(f'corpora/{package}')
+            elif 'punkt' in package:
+                nltk.data.find(f'tokenizers/{package}')
+            else:
+                nltk.data.find(f'taggers/{package}')
+        except LookupError:
+            # Try to download
+            try:
+                print(f"Downloading {package}...")
+                nltk.download(package, quiet=True, raise_on_error=True)
+            except Exception as e:
+                # If download fails, try to clean up corrupted files
+                print(f"Error downloading {package}: {e}")
+                corrupted_paths = [
+                    os.path.join(nltk_data_dir, 'corpora', package),
+                    os.path.join(nltk_data_dir, 'tokenizers', package),
+                    os.path.join(nltk_data_dir, 'taggers', package),
+                ]
+                for path in corrupted_paths:
+                    if os.path.exists(path):
+                        shutil.rmtree(path, ignore_errors=True)
+                # Retry download
+                try:
+                    nltk.download(package, quiet=True, raise_on_error=True)
+                except:
+                    pass
 
+# Download NLTK data
+download_nltk_data()
 import streamlit as st
 import pandas as pd
 import plotly.express as px
