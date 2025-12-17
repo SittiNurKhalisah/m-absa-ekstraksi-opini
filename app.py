@@ -186,7 +186,7 @@ else:
             df.columns
         )
 
-        if st.button("📊 Analisis CSV"):
+        if st.button(" Analisis CSV"):
             with st.spinner("Memproses seluruh ulasan..."):
                 all_results = []
 
@@ -203,10 +203,10 @@ else:
             if all_results:
                 hasil_df = pd.DataFrame(all_results)
 
-                st.subheader("📋 Tabel Hasil Analisis")
+                st.subheader("Tabel Hasil Analisis")
                 st.dataframe(hasil_df, use_container_width=True)
 
-                st.subheader("📊 Statistik Sentimen")
+                st.subheader(" Statistik Sentimen")
                 fig1 = px.bar(
                     hasil_df["Sentimen"].value_counts().reset_index(),
                     x="index", y="Sentimen",
