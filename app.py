@@ -1,47 +1,31 @@
 import nltk
-import os
-import shutil
+import ssl
 
-# Set NLTK data path
-nltk_data_dir = os.path.join(os.path.expanduser('~'), 'nltk_data')
+# Bypass SSL untuk NLTK download
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
 
+# Download NLTK data dengan error handling
 def download_nltk_data():
-    """Download required NLTK data with cleanup on failure"""
-    required_packages = ['stopwords', 'punkt', 'punkt_tab', 'averaged_perceptron_tagger']
-    
-    for package in required_packages:
+    packages = ['stopwords', 'punkt', 'averaged_perceptron_tagger']
+    for package in packages:
         try:
-            # Check if already exists
-            if package == 'stopwords':
-                nltk.data.find(f'corpora/{package}')
-            elif 'punkt' in package:
-                nltk.data.find(f'tokenizers/{package}')
-            else:
-                nltk.data.find(f'taggers/{package}')
-        except LookupError:
-            # Try to download
-            try:
-                print(f"Downloading {package}...")
-                nltk.download(package, quiet=True, raise_on_error=True)
-            except Exception as e:
-                # If download fails, try to clean up corrupted files
-                print(f"Error downloading {package}: {e}")
-                corrupted_paths = [
-                    os.path.join(nltk_data_dir, 'corpora', package),
-                    os.path.join(nltk_data_dir, 'tokenizers', package),
-                    os.path.join(nltk_data_dir, 'taggers', package),
-                ]
-                for path in corrupted_paths:
-                    if os.path.exists(path):
-                        shutil.rmtree(path, ignore_errors=True)
-                # Retry download
-                try:
-                    nltk.download(package, quiet=True, raise_on_error=True)
-                except:
-                    pass
+            nltk.download(package, quiet=True)
+        except:
+            print(f"Failed to download {package}")
+    
+    # Coba download punkt_tab, tapi jangan crash kalau gagal
+    try:
+        nltk.download('punkt_tab', quiet=True)
+    except:
+        print("punkt_tab download failed, will use fallback")
 
-# Download NLTK data
 download_nltk_data()
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -59,7 +43,7 @@ from utils.prediction import predict_aspect_sentiment
 # =====================================================
 st.set_page_config(
     page_title="M-ABSA Layanan Kesehatan",
-    page_icon=" ",
+    page_icon="🏥",
     layout="wide"
 )
 
@@ -186,7 +170,7 @@ else:
             df.columns
         )
 
-        if st.button(" Analisis CSV"):
+        if st.button("Analisis CSV"):
             with st.spinner("Memproses seluruh ulasan..."):
                 all_results = []
 
@@ -206,18 +190,25 @@ else:
                 st.subheader("Tabel Hasil Analisis")
                 st.dataframe(hasil_df, use_container_width=True)
 
-                st.subheader(" Statistik Sentimen")
+                st.subheader("Statistik Sentimen")
+                # FIX: Rename kolom untuk kompatibilitas Pandas versi baru
+                sentimen_counts = hasil_df["Sentimen"].value_counts().reset_index()
+                sentimen_counts.columns = ["Sentimen", "Jumlah"]
+                
                 fig1 = px.bar(
-                    hasil_df["Sentimen"].value_counts().reset_index(),
-                    x="index", y="Sentimen",
-                    labels={"index": "Sentimen", "Sentimen": "Jumlah"}
+                    sentimen_counts,
+                    x="Sentimen", 
+                    y="Jumlah",
+                    labels={"Sentimen": "Sentimen", "Jumlah": "Jumlah"},
+                    title="Distribusi Sentimen"
                 )
                 st.plotly_chart(fig1, use_container_width=True)
 
-                st.subheader("📊 Distribusi Aspek")
+                st.subheader("Distribusi Aspek")
                 fig2 = px.pie(
                     hasil_df,
-                    names="Aspek"
+                    names="Aspek",
+                    title="Distribusi Aspek"
                 )
                 st.plotly_chart(fig2, use_container_width=True)
 
